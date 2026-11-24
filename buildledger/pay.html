@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="referrer" content="no-referrer" />
+  <meta name="theme-color" content="#1D4ED8" />
+  <title>Pay by UPI</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: #F8FAFC;
+      color: #0F172A;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Devanagari", Arial, sans-serif;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+    }
+    .payee { margin: 0; font-size: 14px; color: #475569; }
+    .shop { margin: 4px 0 0; font-size: 20px; font-weight: 700; }
+    .amount { margin: 16px 0 0; font-size: 40px; font-weight: 800; letter-spacing: -0.5px; }
+    .note { margin: 4px 0 0; font-size: 14px; color: #475569; }
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 52px;
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.08s ease, background-color 0.15s ease;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:focus-visible { outline: 3px solid #93C5FD; outline-offset: 2px; }
+    .btn-primary { margin-top: 24px; background: #1D4ED8; color: #F8FAFC; }
+    .btn-primary:hover { background: #1E40AF; }
+    .btn-app { background: #FFFFFF; color: #0F172A; border-color: #D5DBE3; }
+    .btn-app:hover { background: #F1F5F9; }
+    .apps-label { margin: 24px 0 0; font-size: 13px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.4px; }
+    .apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .apps .btn { margin-top: 8px; font-size: 14px; padding: 8px; }
+    .vpa-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 24px;
+      padding: 8px 8px 8px 16px;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      background: #F8FAFC;
+    }
+    .vpa-text { flex: 1; min-width: 0; }
+    .vpa-label { margin: 0; font-size: 12px; color: #64748B; }
+    .vpa { margin: 2px 0 0; font-size: 16px; font-weight: 600; word-break: break-all; }
+    .copy {
+      min-height: 48px;
+      min-width: 72px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid #D5DBE3;
+      background: #FFFFFF;
+      color: #1D4ED8;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .copy:hover { background: #EFF6FF; }
+    .hint { margin: 16px 0 0; font-size: 13px; line-height: 1.5; color: #64748B; }
+    .error { text-align: center; }
+    .error h1 { font-size: 20px; margin: 0 0 8px; }
+    .error p { margin: 0; color: #475569; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <main class="card" id="pay">
+    <p class="payee" id="t-payto">Pay to</p>
+    <p class="shop" id="shop"></p>
+    <p class="amount" id="amount"></p>
+    <p class="note" id="note"></p>
+
+    <a class="btn btn-primary" id="any-app" href="#">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+      <span id="t-any">Pay with any UPI app</span>
+    </a>
+
+    <p class="apps-label" id="t-or">Or open</p>
+    <div class="apps">
+      <a class="btn btn-app" id="gpay" href="#">GPay</a>
+      <a class="btn btn-app" id="phonepe" href="#">PhonePe</a>
+      <a class="btn btn-app" id="paytm" href="#">Paytm</a>
+    </div>
+
+    <div class="vpa-box">
+      <div class="vpa-text">
+        <p class="vpa-label" id="t-upiid">UPI ID</p>
+        <p class="vpa" id="vpa"></p>
+      </div>
+      <button class="copy" id="copy" type="button">Copy</button>
+    </div>
+
+    <p class="hint" id="t-hint">Check the name and UPI ID in your UPI app before you pay. If an app does not open, copy the UPI ID and pay from any UPI app.</p>
+  </main>
+
+  <main class="card error hidden" id="invalid">
+    <h1 id="t-bad-title">This payment link is not valid</h1>
+    <p id="t-bad-body">Please ask the shop to send the reminder again.</p>
+  </main>
+
+  <script>
+    (function () {
+      var STRINGS = {
+        en: {
+          payto: 'Pay to', any: 'Pay with any UPI app', or: 'Or open', payWith: 'Pay with', upiid: 'UPI ID', copy: 'Copy', copied: 'Copied',
+          hint: 'Check the name and UPI ID in your UPI app before you pay. If an app does not open, copy the UPI ID and pay from any UPI app.',
+          badTitle: 'This payment link is not valid', badBody: 'Please ask the shop to send the reminder again.', title: 'Pay by UPI'
+        },
+        mr: {
+          payto: 'यांना पैसे द्या', any: 'कोणत्याही UPI ॲपने भरा', or: 'किंवा उघडा', payWith: 'यातून भरा', upiid: 'UPI ID', copy: 'कॉपी', copied: 'कॉपी केले',
+          hint: 'पैसे भरण्यापूर्वी UPI ॲपमध्ये नाव आणि UPI ID तपासा. ॲप उघडले नाही तर UPI ID कॉपी करून कोणत्याही UPI ॲपने भरा.',
+          badTitle: 'ही पेमेंट लिंक चुकीची आहे', badBody: 'कृपया दुकानाला पुन्हा आठवण पाठवायला सांगा.', title: 'UPI ने भरा'
+        }
+      };
+      var VPA = /^[a-zA-Z0-9._-]{2,255}@[a-zA-Z][a-zA-Z0-9]{1,63}$/;
+
+      var query = new URLSearchParams(window.location.search);
+      var lang = query.get('lang') === 'mr' ? 'mr' : 'en';
+      var s = STRINGS[lang];
+      document.documentElement.lang = lang;
+      document.title = s.title;
+
+      function text(id, value) { document.getElementById(id).textContent = value; }
+
+      var vpa = (query.get('pa') || '').trim().toLowerCase();
+      var name = (query.get('pn') || '').trim().slice(0, 50);
+      var note = (query.get('tn') || '').trim().slice(0, 80);
+      var amount = Number(query.get('am'));
+
+      if (!VPA.test(vpa) || !(amount > 0) || amount > 100000) {
+        document.getElementById('pay').classList.add('hidden');
+        document.getElementById('invalid').classList.remove('hidden');
+        text('t-bad-title', s.badTitle);
+        text('t-bad-body', s.badBody);
+        return;
+      }
+
+      var params = ['pa=' + encodeURIComponent(vpa)];
+      if (name) params.push('pn=' + encodeURIComponent(name));
+      params.push('am=' + amount.toFixed(2), 'cu=INR');
+      if (note) params.push('tn=' + encodeURIComponent(note));
+      var qs = params.join('&');
+
+      var ua = navigator.userAgent || '';
+      var ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      // Android shows its chooser of installed UPI apps for upi://. iOS has no chooser, so it needs app-specific links.
+      document.getElementById('any-app').href = 'upi://pay?' + qs;
+      document.getElementById('gpay').href = (ios ? 'gpay://upi/pay?' : 'tez://upi/pay?') + qs;
+      document.getElementById('phonepe').href = 'phonepe://pay?' + qs;
+      document.getElementById('paytm').href = 'paytmmp://pay?' + qs;
+      if (ios) {
+        document.getElementById('any-app').classList.add('hidden');
+      }
+
+      text('t-payto', s.payto);
+      text('shop', name || vpa);
+      text('amount', '\u20B9' + amount.toLocaleString('en-IN', { minimumFractionDigits: amount % 1 ? 2 : 0, maximumFractionDigits: 2 }));
+      if (note) { text('note', note); } else { document.getElementById('note').classList.add('hidden'); }
+      text('t-any', s.any);
+      text('t-or', ios ? s.payWith : s.or);
+      text('t-upiid', s.upiid);
+      text('vpa', vpa);
+      text('t-hint', s.hint);
+
+      var copy = document.getElementById('copy');
+      copy.textContent = s.copy;
+      copy.addEventListener('click', function () {
+        var done = function () {
+          copy.textContent = s.copied;
+          setTimeout(function () { copy.textContent = s.copy; }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(vpa).then(done, function () { window.prompt(s.upiid, vpa); });
+        } else {
+          window.prompt(s.upiid, vpa);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
